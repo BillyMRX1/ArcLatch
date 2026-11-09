@@ -673,14 +673,34 @@ struct ProviderDetail: View {
     // server supports (verified against its --help), mapped by the adapter.
 
     @ViewBuilder private var runtimeOptions: some View {
+        let advice = controller.runtimeRecommendation()
         VStack(alignment: .leading, spacing: 8) {
             Text("Runtime options").font(.headline)
+            // Suggestions first, so the reason reads before the numbers.
+            // Nothing here is applied automatically: an empty field stays the
+            // engine's default until **Use recommended** is pressed.
+            if controller.id != .ollama {
+                Text(advice.note)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Button("Use recommended") {
+                        controller.applyRuntimeRecommendation(advice)
+                    }
+                    Button("Use engine defaults") {
+                        controller.clearRuntimeOptions()
+                    }
+                }
+                .font(.callout)
+                .disabled(!knobsEnabled)
+            }
             switch controller.id {
             case .llamacpp:
                 knob("Context length (tokens)") {
                     VStack(alignment: .leading, spacing: 3) {
                         DigitField(title: "Context length",
-                                   placeholder: "default",
+                                   placeholder: recommended(advice.contextLength,
+                                                            or: "default"),
                                    value: controller.profile.contextLength,
                                    enabled: knobsEnabled) { parsed, raw in
                             commitNumeric(parsed, raw) { controller.setContextLength($0) }
@@ -696,7 +716,7 @@ struct ProviderDetail: View {
                     }
                 }
                 knob("GPU layers (-ngl)") {
-                    DigitField(title: "GPU layers", placeholder: "auto",
+                    DigitField(title: "GPU layers", placeholder: "auto (recommended)",
                                value: controller.profile.gpuLayers,
                                enabled: knobsEnabled) { parsed, raw in
                             commitNumeric(parsed, raw) { controller.setGPULayers($0) }
@@ -704,7 +724,7 @@ struct ProviderDetail: View {
                         .id(controller.id)
                 }
                 knob("CPU threads") {
-                    DigitField(title: "CPU threads", placeholder: "auto",
+                    DigitField(title: "CPU threads", placeholder: "auto (recommended)",
                                value: controller.profile.threadCount,
                                enabled: knobsEnabled) { parsed, raw in
                             commitNumeric(parsed, raw) { controller.setThreadCount($0) }
@@ -715,7 +735,8 @@ struct ProviderDetail: View {
                 knob("Context length (tokens)") {
                     VStack(alignment: .leading, spacing: 3) {
                         DigitField(title: "Context length",
-                                   placeholder: "default",
+                                   placeholder: recommended(advice.contextLength,
+                                                            or: "default"),
                                    value: controller.profile.contextLength,
                                    enabled: knobsEnabled) { parsed, raw in
                             commitNumeric(parsed, raw) { controller.setContextLength($0) }
@@ -729,7 +750,8 @@ struct ProviderDetail: View {
                     }
                 }
                 knob("Metal memory budget (GB)") {
-                    DigitField(title: "Metal memory budget", placeholder: "auto",
+                    DigitField(title: "Metal memory budget",
+                               placeholder: recommended(advice.maxMemoryGB, or: "auto"),
                                value: controller.profile.maxMemoryGB,
                                enabled: knobsEnabled) { parsed, raw in
                             commitNumeric(parsed, raw) { controller.setMaxMemoryGB($0) }
@@ -738,7 +760,8 @@ struct ProviderDetail: View {
                 }
             case .mlxlm:
                 knob("Max tokens per reply") {
-                    DigitField(title: "Max tokens per reply", placeholder: "default",
+                    DigitField(title: "Max tokens per reply",
+                               placeholder: recommended(advice.maxTokens, or: "default"),
                                value: controller.profile.maxTokens,
                                enabled: knobsEnabled) { parsed, raw in
                             commitNumeric(parsed, raw) { controller.setMaxTokens($0) }
@@ -746,8 +769,10 @@ struct ProviderDetail: View {
                         .id(controller.id)
                 }
                 knob("Default temperature") {
-                    TextField("engine default", value: doubleBinding(get: { controller.profile.temperature },
-                                                                     set: { controller.setTemperature($0) }),
+                    TextField(advice.temperature.map { "\($0) (recommended)" }
+                              ?? "engine default",
+                              value: doubleBinding(get: { controller.profile.temperature },
+                                                   set: { controller.setTemperature($0) }),
                               format: .number.precision(.fractionLength(0...2)))
                         .frame(width: 110)
                 }
@@ -769,6 +794,14 @@ struct ProviderDetail: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 4)
+    }
+
+    /// Field hint text that names the suggested number without filling it in:
+    /// the recommendation stays visible, and an empty field is still exactly
+    /// the engine's own default. Showing it this way means nothing is written
+    /// into a profile just because the app rendered a panel.
+    private func recommended(_ value: Int?, or fallback: String) -> String {
+        value.map { "\($0) (recommended)" } ?? fallback
     }
 
     /// Launch-bound knobs stay locked while a server is starting or running;

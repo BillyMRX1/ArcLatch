@@ -1005,6 +1005,66 @@ public final class ProviderController: ObservableObject, Identifiable {
         updateProfile { $0.temperature = t }
     }
 
+    // MARK: Recommended runtime values
+    //
+    // Suggestions, never defaults applied behind the user's back: an empty
+    // field stays the engine's own default, and nothing here changes a
+    // profile until **Use recommended** is pressed. Values are measured from
+    // the model that is currently selected (a few stat calls) and from this
+    // Mac's RAM. Not @Published and computed on demand: the view re-renders
+    // constantly (the RAM strip ticks every two seconds), so the answer is
+    // cached against what it was measured from instead of being recomputed
+    // per render — and a @Published value refreshed from a view body would
+    // publish mid-render.
+
+    private var adviceCache: (key: String, value: RuntimeRecommendation)?
+
+    public func runtimeRecommendation(
+        weights: any ModelWeightSizing = FileSystemModelWeights(),
+        physicalBytes: UInt64 = ProcessInfo.processInfo.physicalMemory
+    ) -> RuntimeRecommendation {
+        let key = adviceKey()
+        if let cached = adviceCache, cached.key == key { return cached.value }
+        let fresh = RuntimeAdvice.recommend(provider: id, profile: profile,
+                                            weights: weights,
+                                            physicalBytes: physicalBytes)
+        adviceCache = (key, fresh)
+        return fresh
+    }
+
+    /// Applies a suggestion to this provider's knobs. Every field the
+    /// provider shows lands on the recommended value — including empty when
+    /// the advice is "leave this to the engine" — so the panel after the
+    /// click is exactly the suggested setup, not a mix of it and whatever
+    /// was there before. Each value still goes through the same validated
+    /// setter a typed number would.
+    public func applyRuntimeRecommendation(_ rec: RuntimeRecommendation) {
+        setContextLength(rec.contextLength)
+        setGPULayers(rec.gpuLayers)
+        setThreadCount(rec.threadCount)
+        setMaxMemoryGB(rec.maxMemoryGB)
+        setMaxTokens(rec.maxTokens)
+        setTemperature(rec.temperature)
+    }
+
+    /// Back to "the server decides": every knob empty, which is how a
+    /// profile looks before anything was typed.
+    public func clearRuntimeOptions() {
+        setContextLength(nil)
+        setGPULayers(nil)
+        setThreadCount(nil)
+        setMaxMemoryGB(nil)
+        setMaxTokens(nil)
+        setTemperature(nil)
+    }
+
+    /// Recomputed when the model or its files change, or when RAM does.
+    private func adviceKey() -> String {
+        [profile.modelID, profile.localModelDir ?? "",
+         profile.splashPreset?.dir ?? "", profile.draftPath ?? ""]
+            .joined(separator: "|")
+    }
+
     // MARK: Logs
 
     private func appendLog(_ line: String) {

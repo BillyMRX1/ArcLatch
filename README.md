@@ -111,7 +111,16 @@ Structured fields under **Advanced settings** map to each server’s own flags:
 | **MLX-LM** | max tokens → `--max-tokens`, temperature → `--temp`, approved custom code → `--trust-remote-code` |
 | **Ollama** | none: tags and service configuration belong to Ollama |
 
-Free-form **Extra arguments** are appended last, and any argument that would override the loopback address, the port, or a provider’s launch invariants is refused before anything starts.
+Every field starts **empty**, which means the engine’s own default: ArcLatch never writes a number into a profile by itself. Under those fields, **Runtime options** offers what ArcLatch would suggest for the model you have selected on this Mac, with **Use recommended** and **Use engine defaults** beside it. Each field’s hint shows its recommended number, and the line above the buttons says where it came from. Applying a recommendation sets every field that provider shows — empty where the advice is “leave this to the engine” — and each value then goes through the same validation as a typed one.
+
+| Provider | What is suggested, and why |
+| --- | --- |
+| **Splash** | context length, plus a `--max-memory` budget measured from the preset bundle’s own manifest (target shards, projector, draft) with cache and 25% headroom. No budget is offered when the model is larger than 75% of RAM or its files cannot be measured: a cap smaller than the model turns a start that would work into an out-of-memory failure, so the safer advice is to leave it to Splash. |
+| **llama.cpp** | context length only. `-c` defaults to the model’s own context, which for a 262K-context model means an enormous cache; `-ngl` and `-t` stay on auto, which this build sizes better than a fixed count. |
+| **MLX-LM** | 1,024 tokens per reply and temperature 0.7. |
+| **Ollama** | nothing: those options live in the Homebrew service’s own environment. |
+
+Suggestions are measured, not looked up: weights come from the selected model’s files, RAM from the machine, and the cache cost from the same 0.15 MB/token estimate the “may not fit” line uses. Suggested context is the largest of 32,768 / 16,384 / 8,192 / 4,096 / 2,048 whose cache stays under 35% of RAM and which, with the weights, stays under 80%. Change the model and the suggestion changes with it; press **Use recommended** and it lands in your saved profile.
 
 ## Server behavior
 
