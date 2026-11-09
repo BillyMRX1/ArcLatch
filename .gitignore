@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# SwiftPM and Xcode
+/.build/
+/build/
+/DerivedData/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+
+# Local configuration, diagnostics, and distribution files
+.env
+.env.*
+!.env.example
+*.local
+*.log
+/ArcLatch-*.zip
+/profiles.json
+
+# Local planning notes
+/DESIGN.md

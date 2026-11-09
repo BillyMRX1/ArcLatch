@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>ArcLatch</title>
+  <desc>A chartreuse latch arm closes toward an ivory catch on an ink-green tile.</desc>
+  <rect x="84" y="84" width="856" height="856" rx="188" fill="#182320"/>
+  <g transform="translate(-22 0)">
+    <path d="M681 376h35a54 54 0 0 1 54 54v164a54 54 0 0 1-54 54h-35"
+          fill="none" stroke="#f1eada" stroke-width="78" stroke-linecap="round"/>
+    <path d="m324 625 198-212 129 99"
+          fill="none" stroke="#d9f777" stroke-width="92" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="324" cy="625" r="64" fill="#d9f777"/>
+    <circle cx="324" cy="625" r="23" fill="#182320"/>
+  </g>
+</svg>
